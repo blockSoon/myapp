@@ -1,4 +1,4 @@
-name: Build and Deploy
+name : last nest deploy
 
 on:
   push:
@@ -6,83 +6,71 @@ on:
       - master
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: checkout
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
+      
+      - name: set up node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Create .env file
-        run: |
-          echo "${{ secrets.MY_KEY }}" > .env
+      # - name: create .env
+      #   run: |
+      #     "${{ secrets.MY_KEY }}" > .env 
 
-      - name: Install dependencies
+      - name: npm install # 의존성 설치 npm audit fix || true 보안 취약점을 자동으로 유연하게 수정해서 실패해도 일단 빌드 진행 하면서 의존성 유연하게 설치
         run: |
           npm install
-          npm audit fix || true
 
-      - name: Build project
+      - name: build nestjs
         run: |
-          source .env
           npm run build
-
-      - name: Verify build output
+      
+      - name: build output # ls -la dist dist폴더 안의 내용을 상세하게 출력 pwd 현재 작업 경로 출력
         run: |
           ls -la dist
           pwd
-
-      - name: Upload build artifacts
+      
+      - name: Upload build artifacts # 빌드 준비 단계 업로드 하기전 단계 
         uses: actions/upload-artifact@v4
-        with:
+        with: 
           name: build-artifacts
           path: dist/
 
-      - name: Install SSH key
+      - name: install ssh key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SECRET_KEY }}" > ~/.ssh/aws_key
           chmod 600 ~/.ssh/aws_key
           ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-          echo "Host key added to known_hosts:"
           cat ~/.ssh/known_hosts
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: ./dist/
-
-      - name: Debug downloaded artifacts
-        run: |
-          echo "Artifacts in dist directory:"
-          ls -la ./dist
-
-      - name: Prepare EC2 Environment
+      - name: ec2 deploy
         uses: appleboy/ssh-action@v1.0.3
-        with:
+        with: 
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.AWS_SECRET_KEY }}
           port: ${{ secrets.PORT }}
-          script: |
-            echo "Preparing environment on EC2"
+          script: | # 실행할 스크립트
             cd /home/ubuntu
             rm -rf dist
             mkdir dist
+            rm -rf node_modules
+            mkdir node_modules
 
-      - name: SCP to EC2
+      - name: ec2에 아티펙트 내용 복사
         run: |
-          echo "Attempting to SCP files to EC2"
+          ls
+          pwd
           scp -r -i ~/.ssh/aws_key ./dist/* ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/dist/
-          echo "SCP command completed."
+          scp -r -i ~/.ssh/aws_key ./node_modules/* ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/node_modules/
 
-      - name: Deploy to EC2
+      - name: deploy to ec2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -90,9 +78,5 @@ jobs:
           key: ${{ secrets.AWS_SECRET_KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            echo "Starting deployment script on EC2"
             cd /home/ubuntu
-            echo "Current directory: $(pwd)"
-            echo "After copying files, let's see the dist directory on EC2:"
-            ls -la /home/ubuntu/dist/
-            pm2 reload ecosystem.config.js --env production
+            pm2 reload system.config.js --env production
