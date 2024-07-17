@@ -34,7 +34,7 @@ jobs:
           ls -la dist
           pwd
       
-      - name: Upload build artifacts # 빌드 준비 단계 업로드 하기전 단계
+      - name: Upload build artifacts # 빌드 준비 단계 업로드 하기전 단계 
         uses: actions/upload-artifact@v4
         with: 
           name: build-artifacts
