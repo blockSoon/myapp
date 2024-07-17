@@ -64,7 +64,8 @@ jobs:
       - name: ec2에 아티펙트 내용 복사
         run: |
           scp -r -i ~/.ssh/aws_key ./dist/* ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/dist/
-          scp -r -i ~/.ssh/aws_key ./node_modules/* ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/node_modules/
+          ls
+          pwd
 
       - name: deploy to ec2
         uses: appleboy/ssh-action@v1.0.3
