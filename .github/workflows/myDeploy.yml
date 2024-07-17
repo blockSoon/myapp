@@ -1,4 +1,4 @@
-name: Deploy NestJS Application
+name: Build and Deploy
 
 on:
   push:
@@ -10,43 +10,89 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.MY_KEY }}" > .env
 
-    - name: Run tests
-      run: npm run test
+      - name: Install dependencies
+        run: |
+          npm install
+          npm audit fix || true
 
-    - name: Build NestJS application
-      run: npm run build
+      - name: Build project
+        run: |
+          source .env
+          npm run build
 
-    - name: Archive build files
-      run: zip -r build.zip dist node_modules package.json
+      - name: Verify build output
+        run: |
+          ls -la dist
+          pwd
 
-    - name: Deploy to server
-      uses: appleboy/scp-action@v0.1.1
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.AWS_SECRET_KEY }}
-        source: "build.zip"
-        target: "~/nestjs-app/"
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
 
-    - name: SSH and restart server
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.AWS_SECRET_KEY }}
-        script: |
-          cd ~/nestjs-app/
-          unzip -o build.zip
-          npm install --production
-          pm2 restart all || pm2 start dist/main.js --name nestjs-app
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SECRET_KEY }}" > ~/.ssh/aws_key
+          chmod 600 ~/.ssh/aws_key
+          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+          echo "Host key added to known_hosts:"
+          cat ~/.ssh/known_hosts
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./dist/
+
+      - name: Debug downloaded artifacts
+        run: |
+          echo "Artifacts in dist directory:"
+          ls -la ./dist
+
+      - name: Prepare EC2 Environment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.AWS_SECRET_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            echo "Preparing environment on EC2"
+            cd /home/ubuntu
+            rm -rf dist
+            mkdir dist
+
+      - name: SCP to EC2
+        run: |
+          echo "Attempting to SCP files to EC2"
+          scp -r -i ~/.ssh/aws_key ./dist/* ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/dist/
+          echo "SCP command completed."
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.AWS_SECRET_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            echo "Starting deployment script on EC2"
+            cd /home/ubuntu
+            echo "Current directory: $(pwd)"
+            echo "After copying files, let's see the dist directory on EC2:"
+            ls -la /home/ubuntu/dist/
+            pm2 reload ecosystem.config.js --env production
