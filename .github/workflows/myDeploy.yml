@@ -50,6 +50,8 @@ jobs:
 
       - name: install ssh key
         run: |
+          ls
+          pwd
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SECRET_KEY }}" > ~/.ssh/aws_key
           chmod 600 ~/.ssh/aws_key
