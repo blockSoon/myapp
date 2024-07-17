@@ -61,9 +61,9 @@ jobs:
         key: ${{ secrets.AWS_SECRET_KEY }}
         port: ${{ secrets.PORT }}
         script: | # 실행할 스크립트
-        cd /home/ubuntu
-        rm -rf dist
-        mkdir dist
+          cd /home/ubuntu
+          rm -rf dist
+          mkdir dist
 
     - name: ec2에 아티펙트 내용 복사
       run: |
