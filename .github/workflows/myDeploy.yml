@@ -10,6 +10,19 @@ jobs:
         runs-on: ubuntu-latest
     
     steps:
+        - name: set nodejs
+          uses: actions/setup-node@v4
+            with:
+              node-version : '20'
+
+        - name: checkout
+          uses: actions/checkout@v4
+
+        - name: ssh key
+          uses: webfactory/ssh-agent@v0.5.3
+          with:
+            ssh-private-key: ${{ secrets.AWS_SECRET_KEY }}
+
         - name: ssh ec2 접속
           uses: appleboy/ssh-action@v0.1.2
           with: 
