@@ -79,4 +79,5 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /home/ubuntu
+            npm install --production
             pm2 reload system.config.js --env production
