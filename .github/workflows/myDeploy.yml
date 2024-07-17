@@ -68,7 +68,7 @@ jobs:
           ls
           pwd
           scp -r -i ~/.ssh/aws_key ./dist/* ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/dist/
-          scp -r -i ~/.ssh/aws_key ../package.json ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/package.json
+          scp -i ~/.ssh/aws_key ../package.json ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/ubuntu/package.json
 
       - name: deploy to ec2
         uses: appleboy/ssh-action@v1.0.3
