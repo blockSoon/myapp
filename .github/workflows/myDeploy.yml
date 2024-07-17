@@ -47,9 +47,6 @@ jobs:
         run: |
           echo "${{ secrets.AWS_SECRET_KEY }}" > ~/.ssh/aws_key
           chmod 600 ~/.ssh/aws_key
-          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-          echo "Host key added to known_hosts:"
-          cat ~/.ssh/known_hosts
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
