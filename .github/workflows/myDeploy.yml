@@ -10,9 +10,6 @@ jobs:
         runs-on: ubuntu-latest
     
     steps:
-        - name: checkout
-          uses: actions/checkout@4
-
         - name: ssh key
           uses: webfactory/ssh-agent@v0.5.3
           with:
