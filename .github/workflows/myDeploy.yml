@@ -36,10 +36,10 @@ jobs: # 작업의 단위
 
       - name: build test # 빌드 파일 확인
         run: |
-          ls
+          ls -a
           pwd
           cd dist
-          ls
+          ls -a
           pwd
 
       # 러너에 빌드된 파일과 의존성들이 있는 상태 빌드 서버
